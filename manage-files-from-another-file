@@ -1,0 +1,81 @@
+// there's a text file called "command.txt"
+// we write commands inside that file
+// on saving, the command runs
+// commands can create, delete, rename files and add text to them
+..................................................................................
+
+const {
+  watch,
+  readFile,
+  writeFile,
+  unlink,
+  rename,
+  appendFile,
+} = require("node:fs/promises");
+
+// type "node app.js" in terminal to run this file
+// if we make changes to this file while the program is running,
+// we need to stop the program in terminal ('ctrl c') and
+// then run it again so that changes take effect
+
+// commands
+const CREATE_FILE = "create file";
+const DELETE_FILE = "delete file";
+const RENAME_FILE = "rename file";
+const ADD_TO_FILE = "add to file";
+
+const getFileName = (completeString, startFromThisPoint) => {
+  return completeString.substring(startFromThisPoint.length).trim();
+};
+
+(async () => {
+  try {
+    const watcher = watch("./command.txt");
+    for await (const event of watcher) {
+      if (event.eventType === "change") {
+        const contents = await readFile("./command.txt", { encoding: "utf8" });
+
+        // command in 'command.txt' file: "create file new_file.txt"
+        if (contents.includes(CREATE_FILE)) {
+          const fileName = getFileName(contents, CREATE_FILE).replaceAll(
+            " ",
+            "_"
+          );
+          // if there is a path before a file name, then the file will we created in the specified folder
+          // e.g., C:\Users\Desktop\this is a new file --> this_is_a_new_file.txt will be created at the desktop
+          await writeFile(`${fileName}`, "hello");
+        }
+
+        // command in 'command.txt' file:  delete file file_name.txt
+        if (contents.includes(DELETE_FILE)) {
+          const fileName = getFileName(contents, DELETE_FILE);
+          await unlink(`${fileName}`);
+        }
+
+        // command: rename file new_file.txt, newer.txt
+        if (contents.includes(RENAME_FILE)) {
+          const fileNames = getFileName(contents, RENAME_FILE);
+          const fileNamesArray = fileNames.split(",");
+          const fileNameToChange = fileNamesArray[0];
+          const newFileName = fileNamesArray[1].trim();
+
+          await rename(fileNameToChange, newFileName);
+        }
+        // command: add to file file_name.txt -> text to add
+        if (contents.includes(ADD_TO_FILE)) {
+          const fileNameAndText = getFileName(contents, ADD_TO_FILE);
+          const data = fileNameAndText.split("->");
+          const fileToChange = data[0].trim();
+          const textToAdd = data[1];
+
+          await appendFile(fileToChange, textToAdd);
+        }
+      }
+    }
+  } catch (err) {
+    if (err.name === "AbortError") {
+      return;
+    }
+    throw err;
+  }
+})();
