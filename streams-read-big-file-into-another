@@ -1,0 +1,35 @@
+const { open } = require("node:fs/promises");
+
+(async () => {
+  const fileHandleRead = await open("bigfile.txt", "r");
+  const fileHandleWrite = await open("writehere.txt", "w");
+
+  const streamWrite = fileHandleWrite.createWriteStream();
+
+  // let count = 0;
+  const streamRead = fileHandleRead.createReadStream({
+    // start: 0,
+    // end: 100,
+    emitClose: true,
+  });
+  streamRead.setEncoding("utf-8");
+  streamRead.on("data", (portionOfFileDataRead) => {
+    // count++; // stream reads a file in portions (max 64 KiB each). Count a number of these portions
+    // console.log("piece of data read: ", portionOfFileDataRead); //<Buffer >, consisting of max 64KiB
+    // console.log("count: ", count);
+    // if <Buffer > is full, stop writing to this (streamWrite) stream...
+    if (
+      !streamWrite.write(portionOfFileDataRead, () => {
+        console.log("data written to file");
+      })
+    ) {
+      // ... by pausing getting data
+      streamRead.pause();
+    }
+  });
+  streamWrite.on("drain", () => {
+    // console.log("buffer is emptied");
+    // resume getting data
+    streamRead.resume();
+  });
+})();
