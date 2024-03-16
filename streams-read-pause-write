@@ -1,0 +1,24 @@
+const { open } = require("node:fs/promises");
+
+(async () => {
+  const fileHandleRead = await open("origin.txt", "r");
+  const fileHandleWrite = await open("dest.txt", "w");
+
+  const streamRead = fileHandleRead.createReadStream();
+  const streamWrite = fileHandleWrite.createWriteStream();
+
+  //   Readable streams emit 'data' events once a listener is added
+  streamRead.on("data", (chunk) => {
+    console.log("read");
+    if (!streamWrite.write(chunk)) {
+      // stop emitting data
+      streamRead.pause();
+      console.log("data emitting paused");
+    }
+
+    streamRead.on("drain", () => {
+      streamRead.resume();
+      console.log("data emitting resumed");
+    });
+  });
+})();
