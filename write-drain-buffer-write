@@ -1,0 +1,27 @@
+const { open } = require("node:fs/promises");
+
+(async () => {
+  const fileHandle = open("origin.txt", "w");
+
+  const stream = (await fileHandle).createWriteStream();
+
+  let i = 0;
+  function writeToFile() {
+    for (i; i < 10000; i++) {
+      const buffer = Buffer.from(`${i},`);
+      if (!stream.write(buffer)) {
+        // console.log("from writing to buffer, writable need drain: ",i, stream.writableNeedDrain);
+        // console.log("highwaterM: ", stream.writableHighWaterMark);
+        break;
+      }
+    }
+  }
+  writeToFile();
+  stream.on("drain", () => {
+    // console.log("from draining the buffer, writable need drain: ", stream.writableNeedDrain);
+    // console.log("buffer is empty");
+
+    writeToFile();
+    // console.log("i, writable length: ", i, stream.writableLength);
+  });
+})();
