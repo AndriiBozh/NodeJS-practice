@@ -1,0 +1,34 @@
+const { Transform, pipeline } = require("node:stream");
+const { open } = require("node:fs/promises");
+
+class Encrypt extends Transform {
+  _transform(data, encoding, callback) {   
+
+    // increment Buffer's hex values by 1
+    for (let i = 0; i < data.length; i++) {
+      data[i] += 1;
+    }
+    
+    this.push(data);
+    callback();
+  }
+}
+
+(async () => {
+  
+  const fileHandleRead = await open("not_encrypted.txt", "r");
+  const fileHandleWrite = await open("encrypted.txt", "w");
+
+  const readStream = fileHandleRead.createReadStream();
+  const writeStream = fileHandleWrite.createWriteStream();
+
+  const encrypt = new Encrypt();
+
+  pipeline(readStream, encrypt, writeStream, (err) => {
+    if (err) {
+      console.log("error: ", err);
+    } else {
+      console.log("encryption completed");
+    }
+  });
+})();
