@@ -1,0 +1,42 @@
+const net = require("node:net");
+
+const port = 8001;
+
+const clients = [];
+
+const server = net.createServer((connection) => {
+  // 'connection' listener
+  console.log("client connected");
+  let clientId = clients.length + 1; // start with 1, not 0
+  clients.push({ id: clientId.toString(), connection });
+  //  send id to user when they join
+  connection.write(`id: ${clientId}`);
+
+  clients.forEach((client) => {
+    client.connection.write(`\nUser ${clientId} has joined.`);
+  });
+
+  connection.on("data", (data) => {
+    clients.forEach((client) =>
+      client.connection.write(`User ${clientId}: ${data}`)
+    );
+  });
+  //   use 'close' instead of "end"; user leaves - socket closes
+  connection.on("close", () => {
+    clients.forEach((client) => {
+      client.connection.write(`User ${clientId} left.`);
+    });
+  });
+  //   prevent crashing if one of users leaves (closes socket)
+  connection.on("error", (err) => {
+    console.log("from server.js, error on connection: ", err);
+  });
+});
+
+server.on("error", (err) => {
+  console.log("error-----: ", err);
+});
+
+server.listen(port, "127.0.0.1", () => {
+  console.log("server opened on ", server.address());
+});
