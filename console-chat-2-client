@@ -1,0 +1,53 @@
+const net = require("node:net");
+const { stdout, stdin } = require("node:process");
+
+const readline = require("node:readline");
+
+const rl = readline.createInterface({
+  input: stdin,
+  output: stdout, // writable stream
+});
+
+const askUser = (user, questionText) => {
+  rl.question(questionText, (answer) => {
+    stdout.moveCursor(0, -1);
+    // clear the line the cursor is currently in; "0" means the 'entire line'
+    stdout.clearLine(0);
+    user.write(answer);
+  });
+};
+
+const systemMessage = "Your message: ";
+
+const client = net.createConnection({ host: "127.0.0.1", port: 8001 }, () => {
+  console.log("connected to server");
+
+  askUser(client, systemMessage);
+});
+
+client.on("data", (data) => {
+  console.log();
+  stdout.moveCursor(0, -1);
+  stdout.clearLine(0);
+
+  let clientId;
+  //   getting id here
+  if (data.toString().includes("id: ")) {
+    clientId = data.toString().replace("id: ", "");
+    console.log("Your id is : ", clientId);
+    console.log("* * *");
+
+    // getting message here
+  } else {
+    console.log(data.toString()); // from hex values in <Buffer > to utf-8
+  }
+
+  askUser(client, systemMessage);
+});
+
+client.on("error", (err) => {
+  // move cursor to the next line, so that error message is
+  // written on it's own line, not after the "systemMessage"
+  console.log();
+  console.log("client err: ", err);
+});
