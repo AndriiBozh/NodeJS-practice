@@ -1,0 +1,25 @@
+const http = require("node:http");
+const { open } = require("node:fs/promises");
+
+// local server to receive data
+const server = http.createServer();
+
+// listen to the request event
+server.on("request", async (request, res) => {
+  if (request.url === "/" && request.method === "GET") {
+    res.setHeader("Content-Type", "text/html");
+    const fileHandle = await open("./public/index.html", "r");
+    const fileStreamRead = fileHandle.createReadStream();
+    // push all of its data to the attached Writable.
+    // The flow of data will be automatically managed so that
+    // the destination Writable stream is not overwhelmed by
+    // a faster Readable stream.
+    fileStreamRead.pipe(res);
+  }
+});
+
+const port = 8000;
+
+server.listen(port, () => {
+  console.log(`server is at http://localhost:${port}`);
+});
